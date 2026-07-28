@@ -1,35 +1,53 @@
-name: Deploy Mini CRM Frontend to GitHub Pages
+name: Deploy Mini CRM to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: ["main"]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: 'client/package-lock.json'
 
-      - name: Install Dependencies & Build Frontend
+      - name: Install and Build Frontend
         run: |
           cd client
           npm ci
           npm run build
 
-      - name: Deploy to GitHub Pages Branch (gh-pages)
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Copy build to root for static serving
+        run: |
+          cp -r client/dist/* .
+          cp index.html 404.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: client/dist
-          branch: gh-pages
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

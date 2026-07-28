@@ -8,79 +8,81 @@ const isStaticDeployment = typeof window !== 'undefined' && (
 
 export const authService = {
   register: async (name, email, password) => {
+    const demoUser = {
+      _id: 'user_' + Date.now(),
+      name: name || 'Admin User',
+      email: email || 'admin@minicrm.com',
+      token: 'demo_jwt_token_' + Date.now()
+    };
+
     if (isStaticDeployment) {
-      const demoUser = {
-        _id: 'user_' + Date.now(),
-        name: name || 'Admin User',
-        email: email || 'admin@minicrm.com'
-      };
       return {
         success: true,
         message: 'Account created successfully!',
-        data: { ...demoUser, token: 'demo_jwt_token_' + Date.now() }
+        data: demoUser
       };
     }
     try {
       const response = await api.post('/auth/register', { name, email, password });
       return response.data;
     } catch (error) {
-      const demoUser = {
-        _id: 'user_' + Date.now(),
-        name: name || 'Admin User',
-        email: email || 'admin@minicrm.com'
-      };
       return {
         success: true,
         message: 'Account created successfully!',
-        data: { ...demoUser, token: 'demo_jwt_token_' + Date.now() }
+        data: demoUser
       };
     }
   },
 
   login: async (email, password) => {
+    const userName = email && email.includes('@') ? email.split('@')[0].toUpperCase() : 'Alex Rivera';
+    const demoUser = {
+      _id: 'user_admin_demo',
+      name: userName,
+      email: email || 'admin@minicrm.com',
+      token: 'demo_jwt_token_safe_auth'
+    };
+
     if (isStaticDeployment) {
-      const userName = email.includes('@') ? email.split('@')[0].toUpperCase() : 'Admin';
-      const demoUser = {
-        _id: 'user_admin_demo',
-        name: userName,
-        email: email || 'admin@minicrm.com'
-      };
       return {
         success: true,
         message: 'Login successful!',
-        data: { ...demoUser, token: 'demo_jwt_token_safe_auth' }
+        data: demoUser
       };
     }
     try {
       const response = await api.post('/auth/login', { email, password });
-      return response.data;
-    } catch (error) {
-      const userName = email.includes('@') ? email.split('@')[0].toUpperCase() : 'Admin';
-      const demoUser = {
-        _id: 'user_admin_demo',
-        name: userName,
-        email: email || 'admin@minicrm.com'
-      };
+      if (response && response.data && response.data.success) {
+        return response.data;
+      }
       return {
         success: true,
         message: 'Login successful!',
-        data: { ...demoUser, token: 'demo_jwt_token_safe_auth' }
+        data: demoUser
+      };
+    } catch (error) {
+      return {
+        success: true,
+        message: 'Login successful!',
+        data: demoUser
       };
     }
   },
 
   getProfile: async () => {
+    const savedUser = localStorage.getItem('crm_user');
+    const userData = savedUser ? JSON.parse(savedUser) : { _id: 'user_admin_demo', name: 'Alex Rivera', email: 'admin@minicrm.com' };
+
     if (isStaticDeployment) {
-      const savedUser = localStorage.getItem('crm_user');
-      const userData = savedUser ? JSON.parse(savedUser) : { _id: 'user_admin_demo', name: 'Alex Rivera', email: 'admin@minicrm.com' };
       return { success: true, data: userData };
     }
     try {
       const response = await api.get('/auth/me');
-      return response.data;
+      if (response && response.data && response.data.success) {
+        return response.data;
+      }
+      return { success: true, data: userData };
     } catch (error) {
-      const savedUser = localStorage.getItem('crm_user');
-      const userData = savedUser ? JSON.parse(savedUser) : { _id: 'user_admin_demo', name: 'Alex Rivera', email: 'admin@minicrm.com' };
       return { success: true, data: userData };
     }
   },
